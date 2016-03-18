@@ -1,0 +1,8 @@
+SET a 5
+GET a
+BEGIN
+SET a 1
+GET a
+ROLLBACK
+GET a
+END
