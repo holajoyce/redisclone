@@ -2,19 +2,10 @@
 '''
 Created on Mar 16, 2016
 
-@author: private
+@author: Joyce Chan
 '''
 import io
 import sys
-msg = u"""SET a 5
-GET a
-BEGIN
-SET a 1
-GET a
-ROLLBACK
-GET a
-END
-"""
 
 class Transaction(object):
     
@@ -26,7 +17,6 @@ class Transaction(object):
     def __str__(self):
         ",".join(self.transaction)
         
-    
 
 class RedisClone(object):
     
@@ -102,9 +92,11 @@ class RedisClone(object):
         else:               
             processed = self.db_numequalto_helper(instruction, transaction.db_histogram)
         return processed
+    
     def db_numequalto_helper(self,instruction,db_histogram):
         if len(instruction)==2:
-            return len(db_histogram[instruction[1]])
+            if instruction[1] in db_histogram:
+                return len(db_histogram[instruction[1]])
         return 0
     
     #-----------------------
@@ -118,7 +110,6 @@ class RedisClone(object):
                 return db_hashmap[instruction[1]]
             return "NULL"
         return None
-    
     
     #-----------------------
     def process_db_instructions(self,instruction,transaction=None):
@@ -158,12 +149,19 @@ class RedisClone(object):
         if not self.db_transactions:
             return "NO TRANSACTION"
         self.db_transactions.pop()
+#         self.db_transactions = []
         return True
     
     # remove lines from write ahead log
     def db_commit(self):
-        t = self.db_transactions.pop()
-        self.db_hashmap, self.db_histogram = t.db_hashmap, t.db_histogram
+        
+        if self.db_transactions: # pop the last one if possible
+            t = self.db_transactions.pop()
+            self.db_hashmap, self.db_histogram = t.db_hashmap, t.db_histogram
+        
+        # reset everything
+        self.db_transactions=[]
+        
         return True
     
     def read_a_line(self,buf):
@@ -187,19 +185,22 @@ def main():
     
     # read from file
     sysargv = sys.argv
-    if(len(sysargv)>1):
-        s =''
+    if(len(sysargv)==2):
+        mesg =''
         with open(sysargv[1]) as f: 
-            s = f.read()
-        r.readlines(msg)
+            mesg = f.read()
+        r.readlines(mesg)
     
-    else: # read from input
+    # read from input
+    elif(len(sysargv)==1): 
         line = raw_input()
         while line and not line=="END":
             instruction  = line.split()
             result = r.process(instruction)
             if not isinstance(result, bool): print(result)
             line = raw_input()
+    
+    
 
 
 if __name__ == "__main__":

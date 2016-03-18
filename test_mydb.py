@@ -33,99 +33,91 @@ def test_db_set_set_count():
     assert r.db_histogram[1]==['a','b']
 
 
-
-def test_db_transaction_with_commit():
+def test_example1():
     r = RedisClone()
-    some_command = r.process(["SET","a",5])
-    assert r.db_hashmap["a"] == 5
-     
-    had_began =r.process(["BEGIN"])
-    had_set = r.process(["SET","a",1])
-    assert r.db_hashmap["a"] == 5
-    result = r.process(["GET","a"])
-    assert result == 1
-     
     r.process(["BEGIN"])
-    r.process(["SET","a",3])
-    assert r.process(["GET", "a"]) == 3
-    assert r.db_hashmap["a"] == 5
-    
-    r.process(["COMMIT"])
-    assert r.db_hashmap["a"] == 3
-     
-    r.process(["COMMIT"])
-    assert r.db_hashmap["a"] == 1
-
-
-def test_db_transaction_with_rollback():
-    r = RedisClone()
-    some_command = r.process(["SET","a",5])
-    assert r.db_hashmap["a"] == 5
-     
-    had_began =r.process(["BEGIN"])
-    had_set = r.process(["SET","a",1])
-    assert r.db_hashmap["a"] == 5
-    result = r.process(["GET","a"])
-    assert result == 1
-     
+    r.process(["SET","a",30])
     r.process(["BEGIN"])
-    r.process(["SET","a",3])
-    assert r.process(["GET", "a"]) == 3
-    assert r.db_hashmap["a"] == 5
-    
-    r.process(["ROLLBACK"])
-    assert r.db_hashmap["a"] == 5
-    
-    assert r.process(["GET","a"])==1    
-     
+    r.process(["SET","a",40])
     r.process(["COMMIT"])
-    assert r.db_hashmap["a"] == 1
-
-
-def test_db_transaction_with_bad_rollback():
-    r = RedisClone()
-    some_command = r.process(["SET","a",5])
-    assert r.db_hashmap["a"] == 5
-     
-    had_began =r.process(["BEGIN"])
-    had_set = r.process(["SET","a",1])
-    assert r.db_hashmap["a"] == 5
-    result = r.process(["GET","a"])
-    assert result == 1
-     
-    r.process(["BEGIN"])
-    r.process(["SET","a",3])
-    assert r.process(["GET", "a"]) == 3
-    assert r.db_hashmap["a"] == 5
-    
-    r.process(["ROLLBACK"])
-    assert r.db_hashmap["a"] == 5
-    
-    assert r.process(["GET","a"])==1    
-     
-    r.process(["COMMIT"])
-    assert r.db_hashmap["a"] == 1
-    
+    assert r.process(["GET","a"]) == 40
     assert r.process(["ROLLBACK"])=="NO TRANSACTION"
+
+ 
+def test_example2():
+    r = RedisClone()
+    r.process(["BEGIN"])
+    r.process(["SET","a",10])
+    assert r.process(["GET","a"])==10
+    r.process(["BEGIN"])
+    r.process(["SET","a",20])
+    assert r.process(["GET","a"])==20
+    r.process(["ROLLBACK"])
+    assert r.process(["GET","a"])==10
+    r.process(["ROLLBACK"])
+    assert r.process(["GET","a"])=="NULL"
+ 
+ 
+def test_example3():
+    r = RedisClone()
+    r.process(["SET","a",50])
+    r.process(["BEGIN"])
+    assert r.process(["GET","a"])==50
+    r.process(["SET","a",60])
+    r.process(["BEGIN"])
+    r.process(["UNSET","a"])
+    assert r.process(["GET","a"])=="NULL"
+    r.process(["ROLLBACK"])
+    assert r.process(["GET","a"])==60
+    r.process(["COMMIT"])
+    assert r.process(["GET","a"])==60
+    
+def test_example4():
+    r = RedisClone()
+    r.process(["SET","a",10])
+    r.process(["BEGIN"])
+    assert r.process(["NUMEQUALTO",10])==1
+    r.process(["BEGIN"])
+    r.process(["UNSET","a"])
+    assert r.process(["NUMEQUALTO",10])==0
+    r.process(["ROLLBACK"])
+    assert r.process(["NUMEQUALTO",10])==1
+    r.process(["COMMIT"])
+
+    
+def test_misc():
+    r = RedisClone()
+    some_command = r.process(["SET","a",5])
+    assert r.db_hashmap["a"] == 5
+    had_began =r.process(["BEGIN"])
+    had_set = r.process(["SET","a",1])
+    assert r.db_hashmap["a"] == 5
+    result = r.process(["GET","a"])
+    assert result == 1
+    r.process(["BEGIN"])
+    r.process(["SET","a",3])
+    assert r.process(["GET", "a"]) == 3
+    assert r.db_hashmap["a"] == 5
+    r.process(["ROLLBACK"])
+    assert r.db_hashmap["a"] == 5
+    assert r.process(["GET","a"])==1    
+    r.process(["COMMIT"])
+    assert r.db_hashmap["a"] == 1
+    assert r.process(["ROLLBACK"])=="NO TRANSACTION"
+
 
 def test_everything_in_tranasactions1():
     r = RedisClone()
-
     had_began =r.process(["BEGIN"])
     had_set = r.process(["SET","a",10])
     assert r.process(["GET","a"])==10
-     
     r.process(["BEGIN"])
     r.process(["SET","a",20])
     assert r.process(["GET", "a"]) == 20
-    
     r.process(["ROLLBACK"])
-    
     assert r.process(["GET","a"]) == 10
-    
     r.process(["ROLLBACK"])
     assert r.process(["GET","a"]) == "NULL"
-    
     assert r.process(["ROLLBACK"])=="NO TRANSACTION"
 
 
